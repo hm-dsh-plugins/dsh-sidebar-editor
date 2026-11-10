@@ -1,0 +1,89 @@
+/**
+ * The wire contract of the editor's Host route: its path, its limits, and the
+ * shape of a failure.
+ *
+ * Kept separate from the handlers because the client half of this protocol is
+ * documented by these constants: a reader who wants to know what the browser
+ * sends and what comes back needs nothing else from the Host.
+ */
+
+/** The one route this plugin owns on the shared `/api` channel. */
+export const ROUTE_PATH = '/api/plugins/dsh-file-editor'
+
+/** Content above this size is refused rather than truncated. */
+export const MAX_TEXT_BYTES = 12 * 1024 * 1024
+
+/**
+ * Ceiling on a received request body.
+ *
+ * A transport guard, not the content rule: JSON escaping can expand the text —
+ * a newline or a quote becomes two bytes, and a control character becomes six
+ * (`\u0001`) — so the body of a perfectly legal write can far exceed
+ * {@link MAX_TEXT_BYTES}. Six is the worst case per character, which is what
+ * this ceiling budgets for; the content limit itself is enforced by `writeText`
+ * after parsing, where the real byte count is known and the answer can be
+ * `too-large` instead of a misleading parse failure.
+ */
+export const MAX_BODY_BYTES = MAX_TEXT_BYTES * 6 + 1024 * 1024
+
+/** Map the logical failure codes this route produces onto HTTP statuses. */
+const STATUS_BY_CODE = {
+  'bad-request': 400,
+  'unknown-session': 404,
+  'not-found': 404,
+  'not-text': 415,
+  'too-large': 413,
+  'outside-workspace': 403,
+  'read-only': 403,
+  'version-conflict': 409,
+  'version-required': 428,
+  'unreadable': 400,
+  'unknown-action': 404,
+  'io-error': 500,
+}
+
+/**
+ * Answer one route failure.
+ * @param {string} code - stable machine code the client branches on.
+ * @param {string} message - human-readable explanation.
+ * @returns {Response} the JSON response.
+ */
+export function failure(code, message) {
+  return Response.json({ code, message }, { status: STATUS_BY_CODE[code] ?? 500 })
+}
+
+/**
+ * One short line of failure text from an unknown thrown value.
+ * @param {unknown} error - thrown value.
+ * @returns {string} a short description.
+ */
+export function describe(error) {
+  return error instanceof Error ? error.message : String(error)
+}
+
+/**
+ * Read the request body as a validated JSON object.
+ * @param {Request} request - incoming request.
+ * @param {number} maxBytes - ceiling on the received text.
+ * @returns {Promise<{ value?: Record<string, unknown>, code?: string, message?: string }>}
+ *   `{ value }`, or `{ code, message }` when the body is unusable.
+ */
+export async function readJson(request, maxBytes) {
+  const overLimit = {
+    code: 'too-large',
+    message: `That request body is above the ${Math.round(maxBytes / 1024 / 1024)} MiB transport limit; the editor handles text up to ${Math.round(MAX_TEXT_BYTES / 1024 / 1024)} MiB.`,
+  }
+  const declared = Number(request.headers.get('content-length') ?? '0')
+  if (Number.isFinite(declared) && declared > maxBytes) return overLimit
+  const text = await request.text()
+  if (Buffer.byteLength(text, 'utf8') > maxBytes) return overLimit
+  try {
+    const value = JSON.parse(text)
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+      return { code: 'bad-request', message: 'Expected a JSON object body.' }
+    }
+    return { value }
+  } catch {
+    return { code: 'bad-request', message: 'Expected a JSON object body.' }
+  }
+}

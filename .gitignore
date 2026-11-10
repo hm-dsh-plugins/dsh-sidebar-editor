@@ -1,0 +1,8 @@
+# Dependencies are installed, not vendored.
+node_modules/
+
+# Build leftovers and the source map: the map is larger than the bundle it
+# describes, and a plugin is loaded from the bundle's URL, never from a map.
+lib/client.js.map
+*.tmp
+*.log

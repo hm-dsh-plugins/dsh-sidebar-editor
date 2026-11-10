@@ -1,0 +1,8 @@
+# dsh bundle patch: inserts this plugin into a profile's layer stack.
+#
+# A profile applies this after its own bundle list, so installing the package is
+# enough for the host to load the file route. The browser half arrives through
+# the same package's `dsh.client` declaration and `./client` export.
+- insert:
+    - id: dsh-file-editor
+      name: dsh-file-editor
