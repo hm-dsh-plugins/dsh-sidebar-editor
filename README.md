@@ -67,20 +67,30 @@ DSH 自带的文件预览是**只读**的，这是它的设计：`@deepseek-ai/d
 
 ## 安装
 
-插件包就在工作区里：`S:\local\share\repos\dsh-plugins\dsh-file-editor`（已构建，`lib/` 里有产物）。
-`lib/` 随包一起提交，所以安装时不需要跑任何构建脚本，也不需要网络下载编译器。
+`lib/` 随包提交，安装时不需要构建，也不需要网络下载编译器。发布给别人见 [Publish.md](Publish.md)。
 
-> 给**别人**装、或者要发到 npm 和插件市场，见 [Publish.md](Publish.md)。下面这一节只讲本机。
-
-### 推荐：本地路径安装
+### 从 npm
 
 ```powershell
-npx -p @deepseek-ai/dsh dsh plugin --profile web add S:\local\share\repos\dsh-plugins\dsh-file-editor
+dsh plugin --profile web add dsh-file-editor
 ```
+
+### 本地路径（开发时）
+
+插件包在工作区里：
+
+```powershell
+dsh plugin --profile web add S:\local\share\repos\dsh-plugins\dsh-file-editor
+```
+
+目录会装成 pnpm 的 `link:`，之后改 `lib/` 刷新页面就生效，不用重装。
 
 装完**重启** DSH，然后刷新浏览器页面。
 
-### 备选：手工接线（跳过包管理器）
+> 本机的 `dsh` 是源码 checkout，不在 PATH 上时改用
+> `node --import tsx/esm apps/cli/src/bin.ts plugin --profile web add …`（在 checkout 根目录执行）。
+
+### 手工接线（跳过包管理器）
 
 不经过 npm/pnpm，直接把包目录链接进 profile：
 
@@ -168,6 +178,7 @@ dsh-file-editor/
 ├─ cordis.patch.yml        # 把这一层插进 profile
 ├─ .gitattributes          # 换行固定为 LF
 ├─ .gitignore              # node_modules、临时文件、client.js.map
+├─ LICENSE                 # MIT
 ├─ lib/                    # 构建产物（生成，勿手改）
 ├─ src/index.js            # Host 入口：只做接线（name / inject / apply）
 ├─ src/host/

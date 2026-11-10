@@ -1,7 +1,6 @@
 {
   "name": "dsh-file-editor",
   "version": "0.1.0",
-  "private": true,
   "description": "CodeMirror-based editable file renderer for the DeepSeek Harness web client: open a text file in the right Sidebar, edit it like a notepad, save with Ctrl/Cmd+S.",
   "type": "module",
   "license": "MIT",
@@ -22,7 +21,21 @@
     "cordis.patch.yml",
     "README.md"
   ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "codemirror",
+    "editor",
+    "sidebar"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hm-dsh-plugins/dsh-file-editor.git"
+  },
+  "homepage": "https://github.com/hm-dsh-plugins/dsh-file-editor#readme",
   "dsh": {
+    "manifestVersion": 1,
     "bundle": {
       "patch": "./cordis.patch.yml"
     },
@@ -37,12 +50,14 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "build:client": "node scripts/build.mjs --client-only",
-    "verify": "node scripts/verify.mjs && node scripts/dom.mjs"
+    "verify": "node scripts/verify.mjs && node scripts/dom.mjs",
+    "prepack": "npm run build"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.1.0"
   },
   "engines": {
+    "dsh": ">=0.2.0 <0.3.0",
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
   },
   "devDependencies": {
