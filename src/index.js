@@ -1,5 +1,5 @@
 /**
- * Host half of `dsh-file-editor`.
+ * Host half of `dsh-sidebar-editor`.
  *
  * The web client's document preview is read-only by construction: the
  * `workspaceFiles` Remote namespace exposes no mutation operation at all. This
@@ -17,7 +17,7 @@
 import { ROUTE_PATH } from './host/protocol.js'
 import { handle } from './host/route.js'
 
-const NAME = 'dsh-file-editor'
+const NAME = 'dsh-sidebar-editor'
 
 export const name = NAME
 

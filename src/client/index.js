@@ -1,5 +1,5 @@
 /**
- * Browser half of `dsh-file-editor`.
+ * Browser half of `dsh-sidebar-editor`.
  *
  * It contributes one more renderer to the right Sidebar's document preview:
  * an editable CodeMirror view offered next to the shipped read-only viewers.
@@ -17,7 +17,7 @@ import { KNOWN_SUFFIXES } from './languages.js'
 import { strings } from './copy.js'
 
 /** This implementation's identity in the document-preview registry. */
-const ID = 'dsh-file-editor'
+const ID = 'dsh-sidebar-editor'
 
 /** One more alternative for every suffix the editor can highlight. */
 const EXTENSIONS = [

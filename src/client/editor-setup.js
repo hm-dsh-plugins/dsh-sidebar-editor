@@ -29,7 +29,7 @@ import { EDITOR_CSS, editorLayout, editorTheme } from './editor-theme.js'
 import { activeLanguage } from './copy.js'
 
 /** The plugin's identity, used for the stylesheet tag and error messages. */
-export const EDITOR_ID = 'dsh-file-editor'
+export const EDITOR_ID = 'dsh-sidebar-editor'
 
 /**
  * Settings the view reconfigures in place.

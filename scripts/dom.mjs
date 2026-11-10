@@ -90,7 +90,7 @@ let servedBom = false
 globalThis.fetch = async (url, init) => {
   const body = JSON.parse(init.body)
   calls.push({ action: body.action, body })
-  if (url !== 'http://127.0.0.1:3090/api/plugins/dsh-file-editor') {
+  if (url !== 'http://127.0.0.1:3090/api/plugins/dsh-sidebar-editor') {
     ok(false, 'the client calls the one registered route path', String(url))
   }
   if (body.action === 'read') {
@@ -198,7 +198,7 @@ ok(dom.window.document.querySelector('.dsh-editor-path') === null, 'no path elem
 ok(bar?.textContent.includes('CRLF') === true, 'the toolbar carries the ending control', bar?.textContent)
 ok(bar?.querySelector('.dsh-editor-chip') === null, 'plain text gets no language chip', bar?.textContent)
 ok(!html.includes('dsh-editor-notice'), 'no failure notice was rendered')
-ok(dom.window.document.querySelector('style[data-plugin="dsh-file-editor"]') !== null, 'the stylesheet was injected once')
+ok(dom.window.document.querySelector('style[data-plugin="dsh-sidebar-editor"]') !== null, 'the stylesheet was injected once')
 
 const view = dom.window.document.querySelector('.cm-content')
 ok(view !== null, 'the editor content surface exists')

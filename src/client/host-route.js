@@ -7,7 +7,7 @@
  */
 
 /** The one Host route this plugin owns; see `src/host/protocol.js`. */
-export const ROUTE = 'api/plugins/dsh-file-editor'
+export const ROUTE = 'api/plugins/dsh-sidebar-editor'
 
 /**
  * Call the editor route on the Host.

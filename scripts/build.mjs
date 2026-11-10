@@ -28,7 +28,7 @@ const clientOnly = process.argv.includes('--client-only')
 const minify = process.argv.includes('--minify')
 
 /** Package name registered with the client module system; also the bundle id. */
-const ID = 'dsh-file-editor'
+const ID = 'dsh-sidebar-editor'
 
 /** Modules the platform seed table serves, so they must never be bundled in. */
 const EXTERNAL = ['react', 'react/jsx-runtime', 'react-dom', 'react-dom/client']

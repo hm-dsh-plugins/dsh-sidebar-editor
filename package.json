@@ -1,5 +1,5 @@
 {
-  "name": "dsh-file-editor",
+  "name": "dsh-sidebar-editor",
   "version": "0.1.0",
   "description": "CodeMirror-based editable file renderer for the DeepSeek Harness web client: open a text file in the right Sidebar, edit it like a notepad, save with Ctrl/Cmd+S.",
   "type": "module",
@@ -31,9 +31,9 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hm-dsh-plugins/dsh-file-editor.git"
+    "url": "git+https://github.com/hm-dsh-plugins/dsh-sidebar-editor.git"
   },
-  "homepage": "https://github.com/hm-dsh-plugins/dsh-file-editor#readme",
+  "homepage": "https://github.com/hm-dsh-plugins/dsh-sidebar-editor#readme",
   "dsh": {
     "manifestVersion": 1,
     "bundle": {

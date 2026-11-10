@@ -72,7 +72,7 @@ async function servicesUsedIn(target) {
 console.log('\nhost half: lib/index.js')
 
 const host = await import(pathToFileURL(join(root, 'lib', 'index.js')).href)
-ok(host.name === 'dsh-file-editor', 'exports the plugin name')
+ok(host.name === 'dsh-sidebar-editor', 'exports the plugin name')
 ok(host.inject.includes('connection') && host.inject.includes('sessions'), 'declares its required services', host.inject)
 for (const service of await servicesUsedIn(join(root, 'src', 'index.js'))) {
   ok(host.inject.includes(service), `injects the "${service}" service the host half uses`)
@@ -81,7 +81,7 @@ for (const service of await servicesUsedIn(join(root, 'src', 'host'))) {
   ok(host.inject.includes(service), `injects the "${service}" service a host module uses`)
 }
 
-const workspace = await mkdtemp(join(tmpdir(), 'dsh-file-editor-'))
+const workspace = await mkdtemp(join(tmpdir(), 'dsh-sidebar-editor-'))
 const routes = new Map()
 const effects = []
 
@@ -124,7 +124,7 @@ host.apply(ctx)
 ok(effects.some((label) => label.includes('file route')), 'registers its route inside an effect', effects)
 ok(routes.size === 1, 'registers exactly one route', [...routes.keys()])
 
-const route = routes.get('/api/plugins/dsh-file-editor')
+const route = routes.get('/api/plugins/dsh-sidebar-editor')
 ok(route !== undefined, 'route path is the documented one')
 eq(route.methods, ['POST'], 'route is POST-only')
 ok(route.requestBody === 'buffered', 'route buffers its body')
@@ -139,7 +139,7 @@ ok(route.requestBody === 'buffered', 'route buffers its body')
  * @returns {Promise<{ status: number, body: any }>} the decoded response.
  */
 async function call(action, body) {
-  const request = new Request('http://127.0.0.1/api/plugins/dsh-file-editor', {
+  const request = new Request('http://127.0.0.1/api/plugins/dsh-sidebar-editor', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action, ...body }),
@@ -194,7 +194,7 @@ ok(result.status === 403 && result.body.code === 'outside-workspace', 'a foreign
 // A directory link is a way out of the workspace even when the file below it
 // does not exist yet, so containment has to be checked through the nearest
 // existing ancestor rather than only on paths that already resolve.
-const outside = await mkdtemp(join(tmpdir(), 'dsh-file-editor-outside-'))
+const outside = await mkdtemp(join(tmpdir(), 'dsh-sidebar-editor-outside-'))
 try {
   await symlink(outside, join(workspace, 'escape-link'), 'junction')
   result = await call('write', { sessionId: 'session-1', path: 'escape-link/escaped.txt', text: 'escaped\n' })
@@ -284,7 +284,7 @@ const source = await readFile(join(root, 'lib', 'client.js'), 'utf8')
 ok(source.startsWith('/* Generated from src/'), 'bundle says it is a build artifact')
 const loader = source.slice(source.indexOf('*/') + 2).trimStart()
 ok(loader.startsWith('window.__ModuleLoader__.load({'), 'bundle is a module-loader registration')
-ok(source.includes('id: "dsh-file-editor"'), 'bundle registers under its package name')
+ok(source.includes('id: "dsh-sidebar-editor"'), 'bundle registers under its package name')
 ok(/factory: \(require\) => \{/.test(source), 'bundle exports a factory taking require')
 ok(/require\("react"\)/.test(source), 'react is left to the platform module table')
 
@@ -352,7 +352,7 @@ const clientCtx = {
 
 // The bundle registers itself on import; the file has no exports of its own.
 await import(pathToFileURL(join(root, 'lib', 'client.js')).href)
-ok(registeredId === 'dsh-file-editor', 'the loader receives the package name', registeredId)
+ok(registeredId === 'dsh-sidebar-editor', 'the loader receives the package name', registeredId)
 ok(typeof bundle?.apply === 'function', 'the materialized bundle exports apply')
 ok(Array.isArray(bundle?.inject), 'the materialized bundle exports inject', bundle?.inject)
 
@@ -366,7 +366,7 @@ bundle.apply(clientCtx)
 
 eq(registrations.previews.length, 1, 'registers exactly one renderer definition')
 const definition = registrations.previews[0]
-ok(definition.id === 'dsh-file-editor', 'renderer id is the package name', definition.id)
+ok(definition.id === 'dsh-sidebar-editor', 'renderer id is the package name', definition.id)
 ok(definition.priority === undefined, 'no priority means the extension band, so it outranks builtin viewers')
 ok(definition.loading === 'renderer', 'the body loads its own content')
 ok(definition.wrap === true, 'the body consumes the wrap preference')
@@ -378,7 +378,7 @@ for (const suffix of ['txt', 'md', 'json', 'ts', 'py', 'yaml', 'sh', 'ini', 'env
 
 const body = registrations.slots.find((entry) => entry.options?.name === 'sidebar.right.tab.document')
 ok(body !== undefined, 'registers into the document body slot')
-ok(body?.options?.key === 'dsh-file-editor', 'the body key matches the renderer id', body?.options?.key)
+ok(body?.options?.key === 'dsh-sidebar-editor', 'the body key matches the renderer id', body?.options?.key)
 ok(typeof body?.component === 'function', 'the body is a component')
 ok(registrations.effects.some((label) => label.includes('renderer metadata')), 'metadata registration is owned by an effect')
 ok(registrations.effects.some((label) => label.includes('editor body')), 'body registration is owned by an effect')

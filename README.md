@@ -1,4 +1,4 @@
-# dsh-file-editor
+# dsh-sidebar-editor
 
 在 DeepSeek Harness 的右侧边栏里，用 CodeMirror 直接把文件当记事本编辑。
 
@@ -16,7 +16,7 @@ DSH 自带的文件预览是**只读**的，这是它的设计：`@deepseek-ai/d
 
 | 一半 | 内容 |
 |---|---|
-| **Host** | 在共享 `/api` 通道上注册一条已认证的路由 `POST /api/plugins/dsh-file-editor`（动作放在请求体里：`read` / `write`）。路径被限制在**当前会话的工作区**内；写入走同目录临时文件 + rename，写入前后各 flush 一次，失败不会留下半个文件。 |
+| **Host** | 在共享 `/api` 通道上注册一条已认证的路由 `POST /api/plugins/dsh-sidebar-editor`（动作放在请求体里：`read` / `write`）。路径被限制在**当前会话的工作区**内；写入走同目录临时文件 + rename，写入前后各 flush 一次，失败不会留下半个文件。 |
 | **Client** | 向 `documentPreviews` 注册一个额外的渲染器，并把它挂到 `sidebar.right.tab.document` 这个槽位上。只读预览一个都没动，仍可随时切回去。 |
 
 > 动作为什么放在请求体而不是子路径？因为 Connection 的 Fetch 路由表是**精确路径**表
@@ -72,7 +72,7 @@ DSH 自带的文件预览是**只读**的，这是它的设计：`@deepseek-ai/d
 ### 从 npm
 
 ```powershell
-dsh plugin --profile web add dsh-file-editor
+dsh plugin --profile web add dsh-sidebar-editor
 ```
 
 ### 本地路径（开发时）
@@ -80,7 +80,7 @@ dsh plugin --profile web add dsh-file-editor
 插件包在工作区里：
 
 ```powershell
-dsh plugin --profile web add S:\local\share\repos\dsh-plugins\dsh-file-editor
+dsh plugin --profile web add S:\local\share\repos\dsh-plugins\dsh-sidebar-editor
 ```
 
 目录会装成 pnpm 的 `link:`，之后改 `lib/` 刷新页面就生效，不用重装。
@@ -97,19 +97,19 @@ dsh plugin --profile web add S:\local\share\repos\dsh-plugins\dsh-file-editor
 ```powershell
 $profile = "$env:USERPROFILE\.dsh\profiles\web"
 New-Item -ItemType Directory -Force -Path "$profile\node_modules" | Out-Null
-New-Item -ItemType Junction -Path "$profile\node_modules\dsh-file-editor" `
-         -Target "S:\local\share\repos\dsh-plugins\dsh-file-editor"
+New-Item -ItemType Junction -Path "$profile\node_modules\dsh-sidebar-editor" `
+         -Target "S:\local\share\repos\dsh-plugins\dsh-sidebar-editor"
 ```
 
 然后在 `$profile\cordis.patch.yml` 末尾追加：
 
 ```yaml
 - insert:
-    - id: dsh-file-editor
-      name: dsh-file-editor
+    - id: dsh-sidebar-editor
+      name: dsh-sidebar-editor
 ```
 
-重启 DSH 并刷新页面。`dsh --profile web --dump-config` 应当能看到 `dsh-file-editor` 这一行。
+重启 DSH 并刷新页面。`dsh --profile web --dump-config` 应当能看到 `dsh-sidebar-editor` 这一行。
 
 ### 卸载
 
@@ -138,7 +138,7 @@ New-Item -ItemType Junction -Path "$profile\node_modules\dsh-file-editor" `
 
 > `inject` 检查是补的：cordis 只对**声明过**该服务的 fiber 解析 `ctx.<服务>`，
 > 没声明就读取会抛 `cannot get property "x" without inject`，整个客户端条目直接 failed。
-> 早期版本声明的是 `inject = ['slots']` 却用了 `ctx.documentPreviews`，于是 `dsh-file-editor`
+> 早期版本声明的是 `inject = ['slots']` 却用了 `ctx.documentPreviews`，于是 `dsh-sidebar-editor`
 > 的客户端条目在启动时失败，页面停在 "web boot: 1 entry did not activate"。
 > 当时 74 项检查全绿——因为对 `documentPreviews` 的断言用的是 mock context，它永远提供该服务。
 > 现在两半都从源码推导该用哪些服务，加一个服务却忘了声明会让 `npm run verify` 直接红。
@@ -151,19 +151,19 @@ New-Item -ItemType Junction -Path "$profile\node_modules\dsh-file-editor" `
 
 另外在真实实例上做过这些核查（用一个临时 `DSH_HOME` + 与你 profile 相同的 bundle 组合启动）：
 
-- `--dump-config` 的输出里出现 `- id: dsh-file-editor` 这一层，说明 bundle 补丁生效。
-- `__DSH_BOOT__` 的 entries 里有 `{"id":"dsh-file-editor","url":"plugins/??dsh-file-editor/client.js&rev=…"}`，说明 Host 扫描识别了 `dsh.client` 声明。
-- 该 combo URL 返回 **200（1.5 MB）**，内容以 `window.__ModuleLoader__.load({ id: "dsh-file-editor" …` 开头（现在前面多了一行「Generated from src/」banner）。
-- 带浏览器 cookie 的 `POST /api/plugins/dsh-file-editor` 打到了插件自己的处理器上：返回的是插件的 JSON 错误体
+- `--dump-config` 的输出里出现 `- id: dsh-sidebar-editor` 这一层，说明 bundle 补丁生效。
+- `__DSH_BOOT__` 的 entries 里有 `{"id":"dsh-sidebar-editor","url":"plugins/??dsh-sidebar-editor/client.js&rev=…"}`，说明 Host 扫描识别了 `dsh.client` 声明。
+- 该 combo URL 返回 **200（1.5 MB）**，内容以 `window.__ModuleLoader__.load({ id: "dsh-sidebar-editor" …` 开头（现在前面多了一行「Generated from src/」banner）。
+- 带浏览器 cookie 的 `POST /api/plugins/dsh-sidebar-editor` 打到了插件自己的处理器上：返回的是插件的 JSON 错误体
   `{"code":"unknown-session",…}`，而不是通用 `not found`。未认证时是 401。
   这条也顺带证明了协议改动——早期把动作放在子路径（`…/read`）时，同样的请求返回的是纯文本 `not found`，
   因为 Connection 的路由表按精确路径查表。
 
 写入路径后来在真实实例上跑通了（真的 `dsh web` + 真的会话 + 真的工作区）：
 
-- `POST /api/plugins/dsh-file-editor` 用真实 `sessionId` 建出 `…\dsh_playground\.dsh-editor-selftest.txt`，
+- `POST /api/plugins/dsh-sidebar-editor` 用真实 `sessionId` 建出 `…\dsh_playground\.dsh-editor-selftest.txt`，
   返回 `{"absolutePath":…,"version":…,"bytes":18}`，磁盘上的内容一致。
-- 浏览器里打开 `dsh-file-editor/README.md`：自动以编辑器打开，59 行正文进入 CodeMirror，行号、语言标签 `md`、
+- 浏览器里打开 `dsh-sidebar-editor/README.md`：自动以编辑器打开，59 行正文进入 CodeMirror，行号、语言标签 `md`、
   状态栏「已保存」都在；键入内容后状态变「未保存」、保存按钮解禁，`Ctrl+S` 后回到「已保存」，磁盘内容同步更新。
 - 启动日志与浏览器控制台都没有报错，`web boot` 不再有任何条目失败。
 
@@ -173,7 +173,7 @@ New-Item -ItemType Junction -Path "$profile\node_modules\dsh-file-editor" `
 ## 包结构
 
 ```
-dsh-file-editor/
+dsh-sidebar-editor/
 ├─ package.json            # dsh.bundle.patch + dsh.client（platform: web）
 ├─ cordis.patch.yml        # 把这一层插进 profile
 ├─ .gitattributes          # 换行固定为 LF
@@ -221,7 +221,7 @@ dsh-file-editor/
 `client.js` 是**自包含的 CJS 工厂**，形如：
 
 ```js
-window.__ModuleLoader__.load({ id: 'dsh-file-editor', factory: (require) => { … } })
+window.__ModuleLoader__.load({ id: 'dsh-sidebar-editor', factory: (require) => { … } })
 ```
 
 `require` 只认平台模块表（`react`、`react-dom`、`@deepseek-ai/cordis`、`ui-primitives` 等）和包内
@@ -249,7 +249,7 @@ window.__ModuleLoader__.load({ id: 'dsh-file-editor', factory: (require) => { �
 ## 开发
 
 ```powershell
-cd S:\local\share\repos\dsh-plugins\dsh-file-editor
+cd S:\local\share\repos\dsh-plugins\dsh-sidebar-editor
 npm install                    # 首次：装语法包与 esbuild
 npm run build                  # 重新产出 lib/（含 banner）
 npm run build -- --minify      # 想要小一点的产物

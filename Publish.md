@@ -19,7 +19,7 @@ lib/index.js             1.7kB
 package.json             2.3kB
 ```
 
-`src/`、`scripts/`、`node_modules/` 不进包。`lib/client.js.map` 也不进：它比 bundle 本身还大（3.0 MB vs 1.6 MB），装插件的人用不到——浏览器按 `plugins/??dsh-file-editor/client.js&rev=…` 加载，没有地方去取这份 map。
+`src/`、`scripts/`、`node_modules/` 不进包。`lib/client.js.map` 也不进：它比 bundle 本身还大（3.0 MB vs 1.6 MB），装插件的人用不到——浏览器按 `plugins/??dsh-sidebar-editor/client.js&rev=…` 加载，没有地方去取这份 map。
 
 ## 元数据
 
@@ -27,7 +27,7 @@ package.json             2.3kB
 |---|---|
 | `private` | 已移除，可以发布 |
 | `license` + `LICENSE` | MIT |
-| `repository` / `homepage` | `github.com/hm-dsh-plugins/dsh-file-editor` |
+| `repository` / `homepage` | `github.com/hm-dsh-plugins/dsh-sidebar-editor` |
 | `keywords` | `dsh` / `dsh-plugin` / `deepseek-harness` / `codemirror` / `editor` / `sidebar` |
 | `engines.dsh` | `>=0.2.0 <0.3.0` |
 | `engines.node` | `^22.22.2 \|\| ^24.15.0 \|\| >=26.0.0` |
@@ -43,16 +43,16 @@ package.json             2.3kB
 | 传什么 | 得到什么 | 什么时候用 |
 |---|---|---|
 | 本地目录路径 | `link:` | 自己开发 |
-| `file:./dsh-file-editor` | 拷贝一份，之后改仓库不影响已装的 | 想固定住某个版本 |
-| `./dsh-file-editor-0.1.0.tgz` | 装 `npm pack` 的产物 | 内部传阅，不走 registry |
-| `github:hm-dsh-plugins/dsh-file-editor` | 从 GitHub 拉 | 还没发 npm、但想让别人试 |
-| `dsh-file-editor` | 从 npm 拉 | 正式分发 |
+| `file:./dsh-sidebar-editor` | 拷贝一份，之后改仓库不影响已装的 | 想固定住某个版本 |
+| `./dsh-sidebar-editor-0.1.0.tgz` | 装 `npm pack` 的产物 | 内部传阅，不走 registry |
+| `github:hm-dsh-plugins/dsh-sidebar-editor` | 从 GitHub 拉 | 还没发 npm、但想让别人试 |
+| `dsh-sidebar-editor` | 从 npm 拉 | 正式分发 |
 
 后两种才是别人能用的。想在市场里被搜到，见下面第二节。
 
 ## 一、发布到 npm
 
-`dsh-file-editor` 这个名字在 npm 上是空的（`npm view dsh-file-editor` 返回 404），可以直接用。
+`dsh-sidebar-editor` 这个名字在 npm 上是空的（`npm view dsh-sidebar-editor` 返回 404），可以直接用。
 
 发布前确认产物是最新的：
 
@@ -67,7 +67,7 @@ npm pack --dry-run
 npm publish
 ```
 
-包名不带 scope 就是 `dsh-file-editor`；如果改用 scope（`@你/dsh-file-editor`），首次发布要加 `--access public`。
+包名不带 scope 就是 `dsh-sidebar-editor`；如果改用 scope（`@你/dsh-sidebar-editor`），首次发布要加 `--access public`。
 
 > 发出去就收不回来了：`npm unpublish` 有 72 小时窗口，而且**版本号不重用**，撤回也占着那个号。所以先在 `npm pack --dry-run` 上确认清楚。
 
@@ -81,22 +81,22 @@ dsh-market 里的插件列表不是它自己维护的，而是每次打开时实
 
 ```json
 {
-  "name": "dsh-file-editor",
+  "name": "dsh-sidebar-editor",
   "owner": "HiroMuraki",
-  "url": "https://github.com/hm-dsh-plugins/dsh-file-editor",
+  "url": "https://github.com/hm-dsh-plugins/dsh-sidebar-editor",
   "category": "ui",
   "description": {
     "en": "Editable CodeMirror renderer for the Sidebar's document preview: open a text file and edit it like a notepad, with an LF/CRLF control.",
     "zh": "在侧边栏的文档预览里用 CodeMirror 直接编辑文本文件，并提供一个 LF/CRLF 行尾切换。"
   },
-  "npm": "dsh-file-editor"
+  "npm": "dsh-sidebar-editor"
 }
 ```
 
 `version`、`stars`、`downloads`、`install`、`capabilities`、`added` 这些**不用你写**，是它 CI 扫出来的。`install` 会自动生成成：
 
 ```
-dsh plugin --profile web add dsh-file-editor
+dsh plugin --profile web add dsh-sidebar-editor
 ```
 
 `category` 从下面 24 个里选一个（`en` 是官方标签）：
@@ -118,7 +118,7 @@ dsh plugin --profile web add dsh-file-editor
 2. 去 awesome-dsh-plugin 提 PR
 3. 等一天左右，站点和 app 内的市场都会自动出现
 
-在那之前别人也不是装不了，只是 market 里搜不到（它只允许装目录里列出来的源），得显式敲 `dsh plugin --profile web add dsh-file-editor`。
+在那之前别人也不是装不了，只是 market 里搜不到（它只允许装目录里列出来的源），得显式敲 `dsh plugin --profile web add dsh-sidebar-editor`。
 
 ## 没验证的部分
 
