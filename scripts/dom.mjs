@@ -84,6 +84,8 @@ let readMode = 'ok'
 /** Latency before a read/write answer, for the in-flight cases. */
 let readDelayMs = 0
 let writeDelayMs = 0
+/** Whether the file the fake Host serves arrived with a byte-order mark. */
+let servedBom = false
 
 globalThis.fetch = async (url, init) => {
   const body = JSON.parse(init.body)
@@ -96,7 +98,7 @@ globalThis.fetch = async (url, init) => {
     if (readMode === 'binary') {
       return { ok: false, status: 415, json: async () => ({ code: 'not-text', message: 'that file is binary' }) }
     }
-    return { ok: true, status: 200, json: async () => ({ absolutePath: FILE_PATH, text: servedText, version: '123', bytes: Buffer.byteLength(servedText), bom: false }) }
+    return { ok: true, status: 200, json: async () => ({ absolutePath: FILE_PATH, text: servedText, version: '123', bytes: Buffer.byteLength(servedText), bom: servedBom }) }
   }
   if (body.action === 'write') {
     if (failNextWrite !== undefined) {
@@ -105,7 +107,7 @@ globalThis.fetch = async (url, init) => {
       return { ok: false, status: 500, json: async () => refusal }
     }
     if (writeDelayMs > 0) await new Promise((resolveTick) => setTimeout(resolveTick, writeDelayMs))
-    return { ok: true, status: 200, json: async () => ({ absolutePath: FILE_PATH, version: '124', bytes: Buffer.byteLength(body.text), bom: false }) }
+    return { ok: true, status: 200, json: async () => ({ absolutePath: FILE_PATH, version: '124', bytes: Buffer.byteLength(body.text), bom: servedBom }) }
   }
   return { ok: false, status: 404, json: async () => ({ code: 'unknown-action', message: 'no' }) }
 }
@@ -330,6 +332,7 @@ const statusIn = (host) => host.querySelector('.dsh-editor-status')?.textContent
 readDelayMs = 120
 readMode = 'ok'
 servedText = 'precious\r\n'
+servedBom = true
 calls.length = 0
 
 const lateHost = dom.window.document.createElement('div')
@@ -382,6 +385,11 @@ await act(async () => {
 })
 writeDelayMs = 0
 ok(statusIn(lateHost) === '未保存', 'a save that raced the keyboard leaves the file unsaved', statusIn(lateHost))
+
+// The mark the read reported has to come back on the save, or saving a file
+// silently changes its encoding.
+const lateWrites = calls.filter((entry) => entry.action === 'write')
+ok(lateWrites.length > 0 && lateWrites.at(-1).body.bom === true, 'a save carries the byte-order mark the read reported', lateWrites.at(-1)?.body?.bom)
 
 // The dictionary follows the interface language without a remount.
 await act(async () => {

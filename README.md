@@ -119,12 +119,12 @@ New-Item -ItemType Junction -Path "$profile\node_modules\dsh-file-editor" `
 
 ## 验证结论
 
-`npm run verify` 会跑两套检查，共 133 项：
+`npm run verify` 会跑两套检查，共 134 项：
 
 - **Host 与客户端包 85 项**（`verify.mjs`）：
   - Host：读、写、建目录、UTF-8 往返、**BOM 往返**、版本冲突拒绝与强制覆盖、**没带版本的覆盖被拒绝（`version-required`）**、路径穿越/外部绝对路径拒绝、**目录链接下的新文件拒绝**、**只读文件拒绝**、二进制与非法 UTF-8 拒绝、BOM 剥离、目录与工作区根拒绝、参数校验、未知会话、未知动作、临时文件不残留、**未物化会话经 `sessionPersistence` 解析**、**转义后超出内容上限的合法请求体照常保存**、**源码里用到的每个 `ctx.<服务>` 都在 `inject` 里声明**（递归扫描 `src/index.js` 与 `src/host/`）、**每个 `src/host/*.js` 都出现在 `lib/host/` 里**。
   - 客户端包：构建产物带「Generated from src/」banner、`__ModuleLoader__` 注册格式、包名、`factory(require)`、React 走平台模块表、`apply`/`inject` 导出、渲染器元数据（id、extension 档位、`loading: 'renderer'`、`wrap`）、130+ 后缀声明、body 槽位与 key、两处注册都由 effect 拥有，以及**源码里用到的每个 `ctx.<服务>` 都在 `inject` 里声明**。
-- **DOM 挂载 48 项**（jsdom）：真把组件挂起来——读请求发出且路径解码正确、CodeMirror 挂载、行号开启、文件正文进入文档、contenteditable、样式只注入一次、卸载时干净拆除；**工具栏不重复文件路径**；**行尾控件**默认取文件自己的行尾、切换后转为未保存、切到 LF 就写 LF、切回 CRLF 就写 CRLF；**文档真的变了才算未保存**（直接向视图派发变更，覆盖「变更监听在视图创建之后挂上」这条时序）；**焦点在工具栏按钮上时 `Ctrl+S` 同样保存**；**被拒绝的保存会说明原因**；**保存后跟随的自动刷新不会重设文档**；**读还没落地时按 `Ctrl+S` 一个字节都不写**；**保存飞行途中继续键入，状态保持「未保存」**；**外部刷新不覆盖未保存编辑，冲突条给出「重新载入」且真的重载**；**打开失败后重试，编辑器回到面板并载入正文**；**界面语言切换后文案跟着变**。
+- **DOM 挂载 49 项**（jsdom）：真把组件挂起来——读请求发出且路径解码正确、CodeMirror 挂载、行号开启、文件正文进入文档、contenteditable、样式只注入一次、卸载时干净拆除；**工具栏不重复文件路径**；**行尾控件**默认取文件自己的行尾、切换后转为未保存、切到 LF 就写 LF、切回 CRLF 就写 CRLF；**文档真的变了才算未保存**（直接向视图派发变更，覆盖「变更监听在视图创建之后挂上」这条时序）；**焦点在工具栏按钮上时 `Ctrl+S` 同样保存**；**被拒绝的保存会说明原因**；**保存后跟随的自动刷新不会重设文档**；**读还没落地时按 `Ctrl+S` 一个字节都不写**；**保存飞行途中继续键入，状态保持「未保存」**；**外部刷新不覆盖未保存编辑，冲突条给出「重新载入」且真的重载**；**打开失败后重试，编辑器回到面板并载入正文**；**界面语言切换后文案跟着变**。
 
 > `inject` 检查是补的：cordis 只对**声明过**该服务的 fiber 解析 `ctx.<服务>`，
 > 没声明就读取会抛 `cannot get property "x" without inject`，整个客户端条目直接 failed。
@@ -243,7 +243,7 @@ npm install                    # 首次：装语法包与 esbuild
 npm run build                  # 重新产出 lib/（含 banner）
 npm run build -- --minify      # 想要小一点的产物
 npm run build:client           # 只重打浏览器那一半，不动 lib/index.js
-npm run verify                 # 跑上面那 133 项检查
+npm run verify                 # 跑上面那 134 项检查
 ```
 
 ### 版本控制
