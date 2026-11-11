@@ -96,7 +96,7 @@ dsh plugin --profile web add dsh-sidebar-editor
 插件包在工作区里：
 
 ```powershell
-dsh plugin --profile web add S:\local\share\repos\dsh-plugins\dsh-sidebar-editor
+dsh plugin --profile web add S:\local\repos\dsh-plugins\dsh-sidebar-editor
 ```
 
 目录会装成 pnpm 的 `link:`，之后改 `lib/` 刷新页面就生效，不用重装。
@@ -114,7 +114,7 @@ dsh plugin --profile web add S:\local\share\repos\dsh-plugins\dsh-sidebar-editor
 $profile = "$env:USERPROFILE\.dsh\profiles\web"
 New-Item -ItemType Directory -Force -Path "$profile\node_modules" | Out-Null
 New-Item -ItemType Junction -Path "$profile\node_modules\dsh-sidebar-editor" `
-         -Target "S:\local\share\repos\dsh-plugins\dsh-sidebar-editor"
+         -Target "S:\local\repos\dsh-plugins\dsh-sidebar-editor"
 ```
 
 然后在 `$profile\cordis.patch.yml` 末尾追加：
@@ -265,7 +265,7 @@ window.__ModuleLoader__.load({ id: 'dsh-sidebar-editor', factory: (require) => {
 ## 开发
 
 ```powershell
-cd S:\local\share\repos\dsh-plugins\dsh-sidebar-editor
+cd S:\local\repos\dsh-plugins\dsh-sidebar-editor
 npm install                    # 首次：装语法包与 esbuild
 npm run build                  # 重新产出 lib/（含 banner）
 npm run build -- --minify      # 想要小一点的产物
