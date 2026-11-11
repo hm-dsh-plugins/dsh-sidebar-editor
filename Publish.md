@@ -82,7 +82,7 @@ dsh-market 里的插件列表不是它自己维护的，而是每次打开时实
 ```json
 {
   "name": "dsh-sidebar-editor",
-  "owner": "HiroMuraki",
+  "owner": "hm-dsh-plugins",
   "url": "https://github.com/hm-dsh-plugins/dsh-sidebar-editor",
   "category": "ui",
   "description": {
@@ -120,6 +120,28 @@ dsh plugin --profile web add dsh-sidebar-editor
 
 在那之前别人也不是装不了，只是 market 里搜不到（它只允许装目录里列出来的源），得显式敲 `dsh plugin --profile web add dsh-sidebar-editor`。
 
-## 没验证的部分
+## 三、自建索引源（已收录）
 
-- **没有 GitHub 仓库能否入目录**。目录条目的字段结构强烈指向"不行"，但没有找到明确写着这一条的说明。
+本插件已经在自建索引里，不需要等官方目录：
+
+| 项 | 值 |
+|---|---|
+| 索引仓库 | [hm-dsh-plugins/index](https://github.com/hm-dsh-plugins/index) |
+| 索引地址 | `https://raw.githubusercontent.com/hm-dsh-plugins/index/main/index.json` |
+| 条目 | `dsh-sidebar-editor`，`source` 为 `{ "type": "git", "url": …, "commit": "<40 位 sha>" }` |
+
+在插件市场的「管理索引源」里添加上面那个地址，本插件就会出现在「发现」页，可一键安装。安装时索引用 `commit` 拼出
+
+```
+git+https://github.com/hm-dsh-plugins/dsh-sidebar-editor#<sha>
+```
+
+所以装到的是打成这个索引时的那个提交，不随分支浮动。
+
+每次发版只做一件事：把索引里这条的 `version`、`publishTimestamp`、`commit` 换成新提交，推 `index` 仓库。
+
+## 当前状态
+
+- GitHub 仓库已建（`hm-dsh-plugins/dsh-sidebar-editor`），`lib/` 随仓库提交，`github:` 形式的安装可用。
+- 已进自建索引源；没有发 npm，也没有向官方目录提 PR。
+- 没有 GitHub 仓库的插件能否进官方目录仍未确认——目录条目挂在 `owner` + `url` 上，字段结构指向"不行"，但没找到明确说明。
