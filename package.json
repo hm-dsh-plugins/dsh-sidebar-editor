@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "CodeMirror-based editable file renderer for the DeepSeek Harness web client: open a text file in the right Sidebar, edit it like a notepad, save with Ctrl/Cmd+S.",
   "type": "module",
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
   "main": "lib/index.js",
   "exports": {
     ".": {
