@@ -67,7 +67,7 @@ DSH 自带的文件预览是**只读**的，这是它的设计：`@deepseek-ai/d
 
 ## 安装
 
-`lib/` 随包提交，安装时不需要构建，也不需要网络下载编译器。发布给别人见 [Publish.md](Publish.md)。
+`lib/` 随包提交，安装时不需要构建，也不需要网络下载编译器。发布给别人见 [dsh-plugins 索引仓库的 README](https://github.com/hm-dsh-plugins/index/blob/main/README.md)。
 
 ### 从索引源（一键安装）
 
@@ -219,7 +219,6 @@ dsh-sidebar-editor/
 │  ├─ verify.mjs           # 两半的行为测试
 │  ├─ dom.mjs              # jsdom 挂载测试
 │  └─ assert.mjs           # 两个测试脚本共用的断言与汇总
-└─ Publish.md              # 安装与发布（npm / 自建索引）
 ```
 
 ## `lib/` 是构建产物
