@@ -151,23 +151,26 @@ export function useFileDocument({ file, content, viewRef, rootRef }) {
         // because the owner refreshes once the file's version moves. Comparing
         // documents rather than strings keeps a line-ending-only difference from
         // counting as a change; that is the toggle's business, not a reload's.
+        // Reopening a file in the same conversation puts the view back where it
+        // was last time; a file with no record starts at the first line.
+        //
+        // The offset is applied in the measure's write phase, once the new
+        // document has a height — setting it earlier would clamp it against a
+        // still-empty document. The dispatch must not ask CodeMirror to scroll
+        // itself (`scrollIntoView`), because that target outlives this callback
+        // and would pull the view back to the top after the offset is applied.
+        const top = recallScroll(file.sessionId, file.path)
         if (view !== null && !view.state.doc.eq(Text.of(result.text.split(LINE_BREAK)))) {
           view.dispatch({
             changes: { from: 0, to: view.state.doc.length, insert: result.text },
             selection: { anchor: 0 },
-            scrollIntoView: true,
           })
         }
-        // Reopening a file in the same conversation puts the view back where it
-        // was last time. The offset is applied in the measure's write phase, once
-        // the new document has a height: setting it before that would clamp it to
-        // a document that is still empty.
-        const top = recallScroll(file.sessionId, file.path)
-        if (view !== null && top !== undefined) {
+        if (view !== null) {
           view.requestMeasure({
             read: () => null,
             write: () => {
-              view.scrollDOM.scrollTop = top
+              view.scrollDOM.scrollTop = top ?? 0
             },
           })
         }
