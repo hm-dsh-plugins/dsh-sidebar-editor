@@ -15,6 +15,7 @@
 import { EditorBody } from './EditorBody.js'
 import { KNOWN_SUFFIXES } from './languages.js'
 import { strings } from './copy.js'
+import { watchScrollMemory } from './scroll-memory.js'
 
 /** This implementation's identity in the document-preview registry. */
 const ID = 'dsh-sidebar-editor'
@@ -61,6 +62,10 @@ export const inject = ['slots', 'documentPreviews']
  * @param ctx - the client root context.
  */
 export function apply(ctx) {
+  // Kept for the whole client lifetime so a conversation switch clears the
+  // remembered positions even while no editor is open.
+  ctx.effect(() => watchScrollMemory(), `${ID}: scroll memory`)
+
   ctx.effect(
     () =>
       ctx.documentPreviews.register({

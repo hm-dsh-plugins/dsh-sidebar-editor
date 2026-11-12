@@ -451,4 +451,87 @@ await act(async () => {
   retryRoot.unmount()
 })
 
+// ---------------------------------------------------------------------------
+// Scroll position
+// ---------------------------------------------------------------------------
+
+// The right Sidebar draws one view per conversation and keeps the inactive ones
+// in the DOM, which is the signal the plugin reads to notice a conversation
+// switch. jsdom lays nothing out, so the scrollport has to claim a height; a
+// hidden one would otherwise forget the position the browser resets.
+const sidebarSession = (id) => {
+  const node = dom.window.document.createElement('div')
+  node.dataset.sidebarRightSession = id
+  dom.window.document.body.appendChild(node)
+  return node
+}
+const sessionOne = sidebarSession('session-1')
+
+/** Mount one body into `host`, wait for its read to land, and return the root. */
+async function mountBody(host) {
+  let root
+  await act(async () => {
+    root = createRoot(host)
+    root.render(react.createElement(EditorBody, ownerProps(rendererContent)))
+  })
+  await act(async () => {
+    await new Promise((resolveTick) => setTimeout(resolveTick, 60))
+  })
+  return root
+}
+
+const scrollerIn = (host) => host.querySelector('.cm-scroller')
+/** Give a jsdom scrollport a viewport height, so a scroll is worth recording. */
+const showScrollport = (host) => {
+  const node = scrollerIn(host)
+  if (node !== null) Object.defineProperty(node, 'clientHeight', { value: 300, configurable: true })
+  return node
+}
+
+const firstHost = dom.window.document.createElement('div')
+sessionOne.appendChild(firstHost)
+const firstRoot = await mountBody(firstHost)
+const firstScroller = showScrollport(firstHost)
+await act(async () => {
+  firstScroller.scrollTop = 240
+  firstScroller.dispatchEvent(new dom.window.Event('scroll'))
+  await new Promise((resolveTick) => setTimeout(resolveTick, 20))
+})
+await act(async () => {
+  firstRoot.unmount()
+})
+
+const reopenHost = dom.window.document.createElement('div')
+sessionOne.appendChild(reopenHost)
+const reopenRoot = await mountBody(reopenHost)
+ok(
+  scrollerIn(reopenHost)?.scrollTop === 240,
+  'reopening a file in the same conversation restores where it stopped',
+  scrollerIn(reopenHost)?.scrollTop,
+)
+await act(async () => {
+  reopenRoot.unmount()
+})
+
+// Switching conversation discards the remembered positions: the next open in
+// the old conversation starts at the top again.
+const otherSession = sidebarSession('session-2')
+sessionOne.hidden = true
+await act(async () => {
+  await new Promise((resolveTick) => setTimeout(resolveTick, 20))
+})
+const afterSwitchHost = dom.window.document.createElement('div')
+sessionOne.appendChild(afterSwitchHost)
+const afterSwitchRoot = await mountBody(afterSwitchHost)
+ok(
+  scrollerIn(afterSwitchHost)?.scrollTop === 0,
+  'switching conversation forgets where the file was',
+  scrollerIn(afterSwitchHost)?.scrollTop,
+)
+await act(async () => {
+  afterSwitchRoot.unmount()
+})
+otherSession.remove()
+sessionOne.remove()
+
 report('DOM checks')

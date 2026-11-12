@@ -12,6 +12,7 @@ import { EditorView } from '@codemirror/view'
 import { callHost } from './host-route.js'
 import { LF, LINE_BREAK, detectLineEnding, otherEnding } from './line-endings.js'
 import { documentListenerCompartment } from './editor-setup.js'
+import { recallScroll } from './scroll-memory.js'
 
 /** The states a save can be in, shared with the toolbar that reports them. */
 export const SAVE = Object.freeze({ idle: 'idle', busy: 'busy', saved: 'saved', failed: 'failed', conflict: 'conflict' })
@@ -155,6 +156,19 @@ export function useFileDocument({ file, content, viewRef, rootRef }) {
             changes: { from: 0, to: view.state.doc.length, insert: result.text },
             selection: { anchor: 0 },
             scrollIntoView: true,
+          })
+        }
+        // Reopening a file in the same conversation puts the view back where it
+        // was last time. The offset is applied in the measure's write phase, once
+        // the new document has a height: setting it before that would clamp it to
+        // a document that is still empty.
+        const top = recallScroll(file.sessionId, file.path)
+        if (view !== null && top !== undefined) {
+          view.requestMeasure({
+            read: () => null,
+            write: () => {
+              view.scrollDOM.scrollTop = top
+            },
           })
         }
         // The baseline is the document as a `Text`, not the string that was

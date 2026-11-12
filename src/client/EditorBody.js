@@ -53,7 +53,7 @@ export function EditorBody(props) {
   // The view must exist before the document hook's effects run, so this call
   // comes first: its mount effect builds the view, and the document hook then
   // attaches its change listener to it.
-  const viewRef = useCodeEditor({ containerRef, language, wrap, dark })
+  const viewRef = useCodeEditor({ containerRef, file, language, wrap, dark })
   const doc = useFileDocument({ file, content, viewRef, rootRef })
 
   // The preview owns the dependency set and clears it whenever the chosen
