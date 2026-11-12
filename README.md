@@ -259,7 +259,7 @@ window.__ModuleLoader__.load({ id: 'dsh-sidebar-editor', factory: (require) => {
 | `lib/client.js` 未压缩（默认，方便读） | 1 542 KiB |
 | `npm run build -- --minify` | 867 KiB |
 | 这个文件 gzip 之后（浏览器实际传输量级） | 408 KiB |
-| 发布出去的 tarball（`lib/**/*.map` 不进包） | 432 KB |
+| 发布出去的 tarball（`lib/**/*.map` 不进包） | 449 KB |
 
 它在**第一次用到「编辑器」渲染器时**才被下载，之后由模块系统缓存；不影响 DSH 启动。
 
