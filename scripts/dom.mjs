@@ -468,13 +468,24 @@ await act(async () => {
 // in the DOM, which is the signal the plugin reads to notice a conversation
 // switch. jsdom lays nothing out, so the scrollport has to claim a height; a
 // hidden one would otherwise forget the position the browser resets.
+//
+// The attribute is drawn twice per conversation, exactly as the Sidebar does it:
+// the outer container carries it and takes `hidden` when the conversation is not
+// the active one, while the panel inside it carries the attribute and is never
+// hidden. Reading the first unhidden match would therefore find a retained
+// conversation's panel, not the active conversation.
 const sidebarSession = (id) => {
-  const node = dom.window.document.createElement('div')
-  node.dataset.sidebarRightSession = id
-  dom.window.document.body.appendChild(node)
-  return node
+  const wrapper = dom.window.document.createElement('div')
+  wrapper.dataset.sidebarRightSession = id
+  const panel = dom.window.document.createElement('div')
+  panel.dataset.sidebarRightSession = id
+  wrapper.appendChild(panel)
+  dom.window.document.body.appendChild(wrapper)
+  return { wrapper, panel }
 }
 const sessionOne = sidebarSession('session-1')
+const sessionTwo = sidebarSession('session-2')
+sessionTwo.wrapper.hidden = true
 
 /** Mount one body into `host`, wait for its read to land, and return the root. */
 async function mountBody(host) {
@@ -498,7 +509,7 @@ const showScrollport = (host) => {
 }
 
 const firstHost = dom.window.document.createElement('div')
-sessionOne.appendChild(firstHost)
+sessionOne.panel.appendChild(firstHost)
 const firstRoot = await mountBody(firstHost)
 const firstScroller = showScrollport(firstHost)
 await act(async () => {
@@ -511,7 +522,7 @@ await act(async () => {
 })
 
 const reopenHost = dom.window.document.createElement('div')
-sessionOne.appendChild(reopenHost)
+sessionOne.panel.appendChild(reopenHost)
 const reopenRoot = await mountBody(reopenHost)
 ok(
   scrollerIn(reopenHost)?.scrollTop === 240,
@@ -523,14 +534,15 @@ await act(async () => {
 })
 
 // Switching conversation discards the remembered positions: the next open in
-// the old conversation starts at the top again.
-const otherSession = sidebarSession('session-2')
-sessionOne.hidden = true
+// the old conversation starts at the top again. The retained conversation comes
+// first in document order, which is the case that used to keep the position.
+sessionOne.wrapper.hidden = true
+sessionTwo.wrapper.hidden = false
 await act(async () => {
   await new Promise((resolveTick) => setTimeout(resolveTick, 20))
 })
 const afterSwitchHost = dom.window.document.createElement('div')
-sessionOne.appendChild(afterSwitchHost)
+sessionOne.panel.appendChild(afterSwitchHost)
 const afterSwitchRoot = await mountBody(afterSwitchHost)
 ok(
   scrollerIn(afterSwitchHost)?.scrollTop === 0,
@@ -540,7 +552,39 @@ ok(
 await act(async () => {
   afterSwitchRoot.unmount()
 })
-otherSession.remove()
-sessionOne.remove()
+sessionTwo.wrapper.remove()
+sessionOne.wrapper.remove()
+
+// ---------------------------------------------------------------------------
+// A file that separates its lines with CR alone
+// ---------------------------------------------------------------------------
+
+// `\r` is a separator CodeMirror recognizes, so a CR-only file is a three-line
+// document — and a save has to write those three lines back with `\r`. Calling
+// the ending LF would rewrite every separator on the first save and still report
+// 「已保存」.
+servedText = 'one\rtwo\rthree\r'
+const crHost = dom.window.document.createElement('div')
+dom.window.document.body.appendChild(crHost)
+const crRoot = await mountBody(crHost)
+eq(crHost.querySelector('button[data-eol]')?.textContent.trim(), 'CR', 'a CR-only file reports its own ending')
+const crView = crHost.querySelector('.cm-content')?.cmTile?.root?.view
+await act(async () => {
+  crView.dispatch({ changes: { from: 0, insert: 'x' } })
+  await new Promise((resolveTick) => setTimeout(resolveTick, 30))
+})
+const writesBeforeCr = writes().length
+await click([...crHost.querySelectorAll('button')].find((node) => node.textContent.trim() === '保存'))
+ok(writes().length === writesBeforeCr + 1, 'a CR-only file can still be saved', writes().length)
+const crText = writes().at(-1)?.body.text ?? ''
+ok(
+  crText.includes('\r') && !crText.includes('\n'),
+  'a CR-only file keeps its CR separators',
+  crText.slice(0, 48),
+)
+await act(async () => {
+  crRoot.unmount()
+})
+crHost.remove()
 
 report('DOM checks')

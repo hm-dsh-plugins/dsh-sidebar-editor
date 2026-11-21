@@ -24,13 +24,14 @@ export const SAVE = Object.freeze({ idle: 'idle', busy: 'busy', saved: 'saved', 
  * @param {object} options.content - the owner's renderer-mode content (revision + callbacks).
  * @param {import('react').MutableRefObject<import('@codemirror/view').EditorView | null>} options.viewRef - the live view.
  * @param {import('react').RefObject<HTMLElement | null>} options.rootRef - the panel, for the save shortcut.
- * @returns {object} state (phase, failure, absolutePath, dirty, save, lineEnding)
+ * @param {import('react').MutableRefObject<number | undefined>} [options.lineRef] - the line the Sidebar asked to
+ *   navigate to, while that navigation is still the reason this body exists.
+ * @returns {object} state (phase, failure, dirty, save, lineEnding)
  *   and actions (load, persist, toggleLineEnding).
  */
-export function useFileDocument({ file, content, viewRef, rootRef }) {
+export function useFileDocument({ file, content, viewRef, rootRef, lineRef }) {
   const [phase, setPhase] = useState('loading')
   const [failure, setFailure] = useState(undefined)
-  const [absolutePath, setAbsolutePath] = useState(undefined)
   const [dirty, setDirty] = useState(false)
   const [save, setSave] = useState({ state: SAVE.idle, at: undefined })
   const [lineEnding, setLineEnding] = useState(/** @type {string} */ (LF))
@@ -135,7 +136,6 @@ export function useFileDocument({ file, content, viewRef, rootRef }) {
         versionRef.current = result.version
         bomRef.current = result.bom === true
         setSave({ state: SAVE.idle, at: undefined })
-        setAbsolutePath(result.absolutePath)
         setPhase('ready')
         contentRef.current?.loaded?.(result.version)
         // The file keeps the ending it arrived with until the user says
@@ -166,7 +166,11 @@ export function useFileDocument({ file, content, viewRef, rootRef }) {
             selection: { anchor: 0 },
           })
         }
-        if (view !== null) {
+        // A navigation to a line outranks the position the file was left at: the
+        // reader clicked a `file:line` link to see that line, not what they were
+        // reading last time. Whichever of the two lands last, only one of them
+        // may move the view.
+        if (view !== null && lineRef?.current === undefined) {
           view.requestMeasure({
             read: () => null,
             write: () => {
@@ -187,7 +191,7 @@ export function useFileDocument({ file, content, viewRef, rootRef }) {
         contentRef.current?.failed?.()
       }
     },
-    [file?.sessionId, file?.path, viewRef],
+    [file?.sessionId, file?.path, viewRef, lineRef],
   )
 
   /** Write the current document back to disk. */
@@ -224,7 +228,6 @@ export function useFileDocument({ file, content, viewRef, rootRef }) {
         const stillDirty = !view.state.doc.eq(sent) || lineEndingRef.current !== sentEnding
         dirtyRef.current = stillDirty
         setDirty(stillDirty)
-        setAbsolutePath(result.absolutePath)
         setFailure(undefined)
         // Typing during the round trip leaves the document ahead of the file on
         // disk. Reporting 「已保存」 here would be a lie the save button itself
@@ -236,7 +239,7 @@ export function useFileDocument({ file, content, viewRef, rootRef }) {
           return
         }
         setFailure({ code: error?.code ?? 'failed', message: error?.message ?? String(error) })
-        setSave({ state: SAVE.failed, at: new Date() })
+        setSave({ state: SAVE.failed, at: undefined })
       }
     },
     [file?.sessionId, file?.path, viewRef],
@@ -281,5 +284,5 @@ export function useFileDocument({ file, content, viewRef, rootRef }) {
     return () => controller.abort()
   }, [load, revision])
 
-  return { phase, failure, absolutePath, dirty, save, lineEnding, toggleLineEnding, load, persist }
+  return { phase, failure, dirty, save, lineEnding, toggleLineEnding, load, persist }
 }

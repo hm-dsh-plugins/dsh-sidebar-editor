@@ -21,13 +21,18 @@ let activeSession
 /**
  * 侧边栏此刻画着哪个对话。
  *
- * 每个对话的侧边栏视图都常驻 DOM，只有当前那个不带 `hidden`；折叠侧边栏不改
- * 这个属性，所以折叠不会被当成换了对话。
+ * 每个对话的侧边栏视图都常驻 DOM，只有当前那个的外层容器不带 `hidden`；折叠
+ * 侧边栏不改这个属性，所以折叠不会被当成换了对话。
+ *
+ * 同一个属性在侧边栏里出现两次：外层容器带 `hidden`，它内部的面板从不带。只
+ * 认最外层，否则命中的永远是某个保留对话的面板——那时切对话不会清空位置，保
+ * 留视图被回收时又会无端清空。
  * @returns {string | undefined} the conversation the right Sidebar is drawing.
  */
 function visibleSession() {
   if (typeof document === 'undefined') return undefined
   for (const node of document.querySelectorAll('[data-sidebar-right-session]')) {
+    if (node.parentElement?.closest('[data-sidebar-right-session]') != null) continue
     if (node.hidden !== true) return node.dataset.sidebarRightSession
   }
   return undefined

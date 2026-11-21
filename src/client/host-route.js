@@ -6,12 +6,18 @@
  * editor component never spells a URL or interprets an HTTP status.
  */
 
-/** The one Host route this plugin owns; see `src/host/protocol.js`. */
-export const ROUTE = 'api/plugins/dsh-sidebar-editor'
+/**
+ * The one Host route this plugin owns; see `src/host/protocol.js`.
+ *
+ * Absolute on purpose: the Host registers it at `/api/plugins/…` whatever path
+ * the client happens to be served from, so resolving it against `baseURI` must
+ * not let a deployment prefix leak into the request path.
+ */
+export const ROUTE = '/api/plugins/dsh-sidebar-editor'
 
 /**
  * Call the editor route on the Host.
- * @param {'read' | 'write' | 'stat'} action - which operation to run.
+ * @param {'read' | 'write'} action - which operation to run.
  * @param {Record<string, unknown>} body - the operation's own payload.
  * @param {AbortSignal} [signal] - cancellation.
  * @returns {Promise<any>} the decoded result; a failure rejects with a `code` property.

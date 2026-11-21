@@ -18,7 +18,7 @@
  * wires them together and draws.
  */
 
-import { createElement, useEffect, useMemo, useRef } from 'react'
+import { createElement, useCallback, useEffect, useMemo, useRef } from 'react'
 import { EditorView } from '@codemirror/view'
 import { parseFileAddress } from './address.js'
 import { languageForName } from './languages.js'
@@ -45,6 +45,16 @@ export function EditorBody(props) {
   const readTabInfo = useTabInfo ?? (() => undefined)
   const navigation = readTabInfo()?.tab?.navigation
   const language = useMemo(() => (file === undefined ? {} : languageForName(file.path)), [file?.path])
+  // The line the Sidebar asked for, if any. The document hook reads it through a
+  // ref rather than an argument so a later navigation cannot change the identity
+  // of `load` and re-read the file.
+  const line = navigation?.params !== undefined && typeof navigation.params.line === 'number' ? navigation.params.line : undefined
+  const lineRef = useRef(line)
+  // Registered before the document hook below, so a load already under way sees
+  // the navigation that started it.
+  useEffect(() => {
+    lineRef.current = line
+  })
 
   const rootRef = useRef(null)
   const containerRef = useRef(null)
@@ -54,7 +64,7 @@ export function EditorBody(props) {
   // comes first: its mount effect builds the view, and the document hook then
   // attaches its change listener to it.
   const viewRef = useCodeEditor({ containerRef, file, language, wrap, dark })
-  const doc = useFileDocument({ file, content, viewRef, rootRef })
+  const doc = useFileDocument({ file, content, viewRef, rootRef, lineRef })
 
   // The preview owns the dependency set and clears it whenever the chosen
   // renderer changes, so one declaration on mount is enough.
@@ -64,7 +74,6 @@ export function EditorBody(props) {
 
   // Follow line navigation delivered by the Sidebar, once there is a document to
   // move the caret in.
-  const line = navigation?.params !== undefined && typeof navigation.params.line === 'number' ? navigation.params.line : undefined
   useEffect(() => {
     const view = viewRef.current
     if (view === null || line === undefined || line < 1) return
@@ -81,13 +90,22 @@ export function EditorBody(props) {
   // would take the CodeMirror view's host element with it while the view itself
   // lives on, so a retry would have nothing to render into: the panel came back
   // empty and stayed empty.
-  const editorHost = createElement('div', {
-    key: 'editor',
-    className: 'dsh-editor-cm',
-    ref: (node) => {
+  //
+  // The callback is stable on purpose: an inline one handed React a new function
+  // on every render, so every render detached the host — handing the preview's
+  // scrollport back to its own body and resetting the offset — and attached it
+  // again.
+  const attachContainer = useCallback(
+    (node) => {
       containerRef.current = node
       scrollportRef?.(node)
     },
+    [scrollportRef],
+  )
+  const editorHost = createElement('div', {
+    key: 'editor',
+    className: 'dsh-editor-cm',
+    ref: attachContainer,
     'data-hidden': failed ? 'true' : undefined,
   })
 

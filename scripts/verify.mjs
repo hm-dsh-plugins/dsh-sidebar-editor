@@ -275,6 +275,102 @@ ok(!names.some((name) => name.includes('.dsh-editor-')), 'no temporary write fil
 await rm(workspace, { recursive: true, force: true })
 
 // ---------------------------------------------------------------------------
+// A write that cannot reach the disk
+// ---------------------------------------------------------------------------
+
+// The temporary file holds the user's text beside their own file, and
+// `.gitignore` hides it from `git status`, so a failure that leaves it behind
+// loses it in plain sight. The failure is injected by loading the built module
+// with its `node:fs/promises` import pointed at a shim; no repository file is
+// touched.
+console.log('\nhost half: a write that fails')
+const shimDirectory = await mkdtemp(join(tmpdir(), 'dsh-sidebar-editor-shim-'))
+const shimPath = join(shimDirectory, 'fs-shim.mjs')
+await writeFile(shimPath, `
+import * as real from 'node:fs/promises'
+export const { chmod, mkdir, readFile, rename, rm, stat } = real
+export async function open(path, flags) {
+  const handle = await real.open(path, flags)
+  if (!String(path).endsWith('.tmp')) return handle
+  return {
+    writeFile: async () => { throw Object.assign(new Error('ENOSPC: no space left on device, write'), { code: 'ENOSPC' }) },
+    sync: () => handle.sync(),
+    close: () => handle.close(),
+  }
+}
+`, 'utf8')
+// The built module imports `./protocol.js`, so an untouched copy goes beside it.
+await writeFile(join(shimDirectory, 'protocol.js'), await readFile(join(root, 'lib', 'host', 'protocol.js'), 'utf8'), 'utf8')
+const textFileUnderTest = join(shimDirectory, 'text-file-under-test.mjs')
+await writeFile(
+  textFileUnderTest,
+  (await readFile(join(root, 'lib', 'host', 'text-file.js'), 'utf8'))
+    .replace("'node:fs/promises'", JSON.stringify(pathToFileURL(shimPath).href)),
+  'utf8',
+)
+const failingWrite = await import(pathToFileURL(textFileUnderTest).href)
+const failedTarget = join(shimDirectory, 'notes.txt')
+await writeFile(failedTarget, 'old contents\n', 'utf8')
+let writeRejected = false
+try {
+  await failingWrite.writeText(failedTarget, 'new contents\n', undefined, true, false)
+} catch {
+  writeRejected = true
+}
+ok(writeRejected, 'a write that cannot reach the disk rejects')
+eq(await readFile(failedTarget, 'utf8'), 'old contents\n', 'the failed write left the target untouched')
+ok(
+  !(await readdir(shimDirectory)).some((name) => name.includes('.dsh-editor-')),
+  'the failed write removed its temporary file',
+  await readdir(shimDirectory),
+)
+await rm(shimDirectory, { recursive: true, force: true })
+
+// ---------------------------------------------------------------------------
+// The version bump
+// ---------------------------------------------------------------------------
+
+console.log('\nbump: the dated version')
+const bump = await import(pathToFileURL(join(root, 'scripts', 'bump-version.mjs')).href)
+eq(bump.nextVersion('2026.11.21-3', '2026.11.21'), '2026.11.21-4', 'a version from the same day counts up')
+eq(bump.nextVersion('2026.11.20-9', '2026.11.21'), '2026.11.21-1', 'the first release of a new day starts at one')
+eq(bump.nextVersion('0.2.0', '2026.11.21'), '2026.11.21-1', 'a version from before the dated scheme starts at one')
+eq(bump.today(new Date(2026, 10, 21, 23, 30, 0)), '2026.11.21', 'the day is the local one, at any hour')
+const bumpDirectory = await mkdtemp(join(tmpdir(), 'dsh-sidebar-editor-bump-'))
+await writeFile(join(bumpDirectory, 'package.json'), `${JSON.stringify({ name: 'x', version: '2000.01.01-9' }, null, 2)}\n`, 'utf8')
+await writeFile(
+  join(bumpDirectory, 'package-lock.json'),
+  `${JSON.stringify({ name: 'x', version: '2000.01.01-9', packages: { '': { name: 'x', version: '2000.01.01-9' } } }, null, 2)}\n`,
+  'utf8',
+)
+const bumped = await bump.bumpVersion(bumpDirectory)
+eq(bumped, `${bump.today()}-1`, 'the first bump of a day is build one')
+eq(JSON.parse(await readFile(join(bumpDirectory, 'package.json'), 'utf8')).version, bumped, 'the manifest carries the new version')
+const bumpedLock = JSON.parse(await readFile(join(bumpDirectory, 'package-lock.json'), 'utf8'))
+ok(
+  bumpedLock.version === bumped && bumpedLock.packages[''].version === bumped,
+  'both lock versions follow the manifest',
+  [bumpedLock.version, bumpedLock.packages[''].version],
+)
+
+// A package lock that cannot be read must fail before the manifest moves: the
+// number would be spent, and `npm ci` would refuse the mismatch it left behind.
+await rm(join(bumpDirectory, 'package-lock.json'))
+let bumpRefused = false
+try {
+  await bump.bumpVersion(bumpDirectory)
+} catch {
+  bumpRefused = true
+}
+ok(bumpRefused, 'a missing lock file refuses the bump')
+eq(
+  JSON.parse(await readFile(join(bumpDirectory, 'package.json'), 'utf8')).version,
+  bumped,
+  'the refused bump left the manifest alone',
+)
+await rm(bumpDirectory, { recursive: true, force: true })
+
+// ---------------------------------------------------------------------------
 // The browser half
 // ---------------------------------------------------------------------------
 
