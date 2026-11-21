@@ -26,7 +26,7 @@ import { endingLabel, otherEnding } from './line-endings.js'
 import { useAppTheme, useEditorStyles, useUiLanguage } from './editor-setup.js'
 import { useCodeEditor } from './use-code-editor.js'
 import { SAVE, useFileDocument } from './use-file-document.js'
-import { MAX_TEXT_MIB, fill, strings } from './copy.js'
+import { MAX_TEXT_MIB, fill, formatTimestamp, strings } from './copy.js'
 
 /**
  * The editor body.
@@ -203,7 +203,9 @@ function describeStatus(t, doc) {
   if (doc.phase === 'loading') return { tone: 'ok', text: t.loading }
   if (doc.save.state === SAVE.busy) return { tone: 'dirty', text: t.saving }
   if (doc.save.state === SAVE.failed) return { tone: 'error', text: t.saveFailed }
-  if (doc.save.state === SAVE.saved) return { tone: 'saved', text: fill(t.savedAt, { time: doc.save.at?.toLocaleTimeString?.() ?? '' }) }
+  if (doc.save.state === SAVE.saved && doc.save.at !== undefined) {
+    return { tone: 'saved', text: fill(t.savedAt, { time: formatTimestamp(doc.save.at) }) }
+  }
   if (doc.dirty) return { tone: 'dirty', text: t.dirty }
   return { tone: 'ok', text: t.saved }
 }

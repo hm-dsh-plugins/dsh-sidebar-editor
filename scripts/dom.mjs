@@ -242,6 +242,15 @@ ok(
   'a save tells the owner which version is on screen, so the preview has nothing to refresh',
   reportedVersions,
 )
+// The instant a save happened is part of the report, in one fixed shape: a
+// locale-dependent `toLocaleTimeString` would read differently per machine and
+// can leave the seconds out altogether.
+const savedStatus = dom.window.document.querySelector('.dsh-editor-status')?.textContent ?? ''
+ok(
+  /^已保存（\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}）$/.test(savedStatus),
+  'a save reports its instant as yyyy-mm-dd HH:mm:ss',
+  savedStatus,
+)
 
 await click(eolButton())
 await click(saveButton())

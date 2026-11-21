@@ -43,8 +43,9 @@ DSH 自带的文件预览是**只读**的，这是它的设计：`@deepseek-ai/d
 ### 保存
 
 - **只手动保存**，不会自动落盘：`Ctrl+S` / `Cmd+S`，或工具栏的「保存」按钮。
-- 状态栏实时显示 `未保存` / `保存中…` / `已保存 · 时间` / `保存失败`；失败时下方会多出一条说明原因的红条
+- 状态栏实时显示 `未保存` / `保存中…` / `已保存（2026-11-21 22:49:19）` / `保存失败`；失败时下方会多出一条说明原因的红条
   （例如 `保存失败：…`，来自 Host 的错误信息），保存按钮保持可用，直接再按一次即可重试。
+  时间戳固定为 `yyyy-mm-dd HH:mm:ss`（本地时区），不随系统 locale 变形。
 - **行尾**：工具栏那个 `LF` / `CRLF` 按钮切换这个文件写回时用的行尾，**默认取文件当前的**——
   打开一个 CRLF 文件、改两个字、保存，它还是 CRLF。点一下换成另一种，按钮上的字跟着变，
   状态栏同时转「未保存」（行尾也是文件内容的一部分，不写回不算保存）。
@@ -146,12 +147,12 @@ New-Item -ItemType Junction -Path "$profile\node_modules\dsh-sidebar-editor" `
 
 ## 验证结论
 
-`npm run verify` 会跑两套检查，共 136 项：
+`npm run verify` 会跑两套检查，共 137 项：
 
 - **Host 与客户端包 85 项**（`verify.mjs`）：
   - Host：读、写、建目录、UTF-8 往返、**BOM 往返**、版本冲突拒绝与强制覆盖、**没带版本的覆盖被拒绝（`version-required`）**、路径穿越/外部绝对路径拒绝、**目录链接下的新文件拒绝**、**只读文件拒绝**、二进制与非法 UTF-8 拒绝、BOM 剥离、目录与工作区根拒绝、参数校验、未知会话、未知动作、临时文件不残留、**未物化会话经 `sessionPersistence` 解析**、**转义后超出内容上限的合法请求体照常保存**、**源码里用到的每个 `ctx.<服务>` 都在 `inject` 里声明**（递归扫描 `src/index.js` 与 `src/host/`）、**每个 `src/host/*.js` 都出现在 `lib/host/` 里**。
   - 客户端包：构建产物带「Generated from src/」banner、`__ModuleLoader__` 注册格式、包名、`factory(require)`、React 走平台模块表、`apply`/`inject` 导出、渲染器元数据（id、extension 档位、`loading: 'renderer'`、`wrap`）、130+ 后缀声明、body 槽位与 key、两处注册都由 effect 拥有，以及**源码里用到的每个 `ctx.<服务>` 都在 `inject` 里声明**。
-- **DOM 挂载 51 项**（jsdom）：真把组件挂起来——读请求发出且路径解码正确、CodeMirror 挂载、行号开启、文件正文进入文档、contenteditable、样式只注入一次、卸载时干净拆除；**工具栏不重复文件路径**；**行尾控件**默认取文件自己的行尾、切换后转为未保存、切到 LF 就写 LF、切回 CRLF 就写 CRLF；**文档真的变了才算未保存**（直接向视图派发变更，覆盖「变更监听在视图创建之后挂上」这条时序）；**焦点在工具栏按钮上时 `Ctrl+S` 同样保存**；**被拒绝的保存会说明原因**；**保存后跟随的自动刷新不会重设文档**；**读还没落地时按 `Ctrl+S` 一个字节都不写**；**保存飞行途中继续键入，状态保持「未保存」**；**外部刷新不覆盖未保存编辑，冲突条给出「重新载入」且真的重载**；**打开失败后重试，编辑器回到面板并载入正文**；**界面语言切换后文案跟着变**；**同一对话里重新打开文件回到上次停下的位置，切换对话后从头开始**。
+- **DOM 挂载 52 项**（jsdom）：真把组件挂起来——读请求发出且路径解码正确、CodeMirror 挂载、行号开启、文件正文进入文档、contenteditable、样式只注入一次、卸载时干净拆除；**工具栏不重复文件路径**；**行尾控件**默认取文件自己的行尾、切换后转为未保存、切到 LF 就写 LF、切回 CRLF 就写 CRLF；**保存后状态栏给出固定格式的时间戳**；**文档真的变了才算未保存**（直接向视图派发变更，覆盖「变更监听在视图创建之后挂上」这条时序）；**焦点在工具栏按钮上时 `Ctrl+S` 同样保存**；**被拒绝的保存会说明原因**；**保存后跟随的自动刷新不会重设文档**；**读还没落地时按 `Ctrl+S` 一个字节都不写**；**保存飞行途中继续键入，状态保持「未保存」**；**外部刷新不覆盖未保存编辑，冲突条给出「重新载入」且真的重载**；**打开失败后重试，编辑器回到面板并载入正文**；**界面语言切换后文案跟着变**；**同一对话里重新打开文件回到上次停下的位置，切换对话后从头开始**。
 
 > `inject` 检查是补的：cordis 只对**声明过**该服务的 fiber 解析 `ctx.<服务>`，
 > 没声明就读取会抛 `cannot get property "x" without inject`，整个客户端条目直接 failed。
@@ -195,7 +196,7 @@ dsh-sidebar-editor/
 ├─ cordis.patch.yml        # 把这一层插进 profile
 ├─ .gitattributes          # 换行固定为 LF
 ├─ .gitignore              # node_modules、临时文件、client.js.map
-├─ LICENSE                 # MIT
+├─ LICENSE                 # GPL-3.0-or-later
 ├─ lib/                    # 构建产物（生成，勿手改）
 ├─ src/index.js            # Host 入口：只做接线（name / inject / apply）
 ├─ src/host/
@@ -215,9 +216,10 @@ dsh-sidebar-editor/
 │  ├─ host-route.js        # 浏览器端调用 Host 路由
 │  ├─ line-endings.js      # LF / CRLF 识别与切换
 │  ├─ languages.js         # 后缀 → 语法高亮
-│  └─ copy.js              # 中英文案
+│  └─ copy.js              # 中英文案与时间戳格式
 ├─ scripts/
 │  ├─ build.mjs            # src/ → lib/
+│  ├─ bump-version.mjs     # 版本号 → 当日日期 + 第几次构建
 │  ├─ verify.mjs           # 两半的行为测试
 │  ├─ dom.mjs              # jsdom 挂载测试
 │  └─ assert.mjs           # 两个测试脚本共用的断言与汇总
@@ -259,7 +261,7 @@ window.__ModuleLoader__.load({ id: 'dsh-sidebar-editor', factory: (require) => {
 | `lib/client.js` 未压缩（默认，方便读） | 1 542 KiB |
 | `npm run build -- --minify` | 867 KiB |
 | 这个文件 gzip 之后（浏览器实际传输量级） | 408 KiB |
-| 发布出去的 tarball（`lib/**/*.map` 不进包） | 449 KB |
+| 发布出去的 tarball（`lib/**/*.map` 不进包） | 450 KB |
 
 它在**第一次用到「编辑器」渲染器时**才被下载，之后由模块系统缓存；不影响 DSH 启动。
 
@@ -271,8 +273,20 @@ npm install                    # 首次：装语法包与 esbuild
 npm run build                  # 重新产出 lib/（含 banner）
 npm run build -- --minify      # 想要小一点的产物
 npm run build:client           # 只重打浏览器那一半，不动 lib/index.js
-npm run verify                 # 跑上面那 136 项检查
+npm run verify                 # 跑上面那 137 项检查
+npm run bump                   # 发布前：版本号 +1（见下）
 ```
+
+### 版本号
+
+版本是**日期 + 当日第几次构建**：`yyyy.MM.dd-x`。2026-11-21 的第一次发布是
+`2026.11.21-1`，当天再发一次就是 `2026.11.21-2`；到了第二天重新从 `-1` 数起。
+
+`npm run bump` 负责递增，它读 `package.json` 里现有的版本：同一天就加一，别的日期（或旧格式）
+就从 `1` 开始，然后同时写回 `package.json` 与 `package-lock.json`。日期按本地时区算。
+
+这一步**只在发布时手动做**，不挂在 `build` 上——重新构建不等于发布，每次构建都改
+`package.json` 会让工作区始终是脏的，也会白白消耗当天的编号。
 
 ### 版本控制
 

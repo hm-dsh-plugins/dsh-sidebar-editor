@@ -24,7 +24,7 @@ const zh = {
   hugeTitle: '这个文件太大了',
   hugeBody: '编辑器打开的文本文件上限是 {limit} MiB。',
   failedTitle: '无法打开这个文件',
-  savedAt: '已保存 · {time}',
+  savedAt: '已保存（{time}）',
   saveFailedDetail: '保存失败：{message}',
   eolTitle: '行尾：{current}（点击改为 {next}）',
 }
@@ -47,7 +47,7 @@ const en = {
   hugeTitle: 'This file is too large',
   hugeBody: 'The editor opens text files up to {limit} MiB.',
   failedTitle: 'This file could not be opened',
-  savedAt: 'Saved · {time}',
+  savedAt: 'Saved ({time})',
   saveFailedDetail: 'Save failed: {message}',
   eolTitle: 'Line endings: {current} — click for {next}',
 }
@@ -77,6 +77,21 @@ export function activeLanguage() {
  */
 export function strings() {
   return activeLanguage() === 'zh' ? zh : en
+}
+
+/**
+ * Write an instant the way the status line shows it: `yyyy-mm-dd HH:mm:ss`, in
+ * the reader's own time zone.
+ *
+ * `toLocaleTimeString` is not used: it follows the machine's locale, so the same
+ * save reads differently on two machines and may drop the seconds entirely.
+ * @param {Date} at - the instant.
+ * @returns {string} the formatted instant.
+ */
+export function formatTimestamp(at) {
+  const pad = (value) => String(value).padStart(2, '0')
+  return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())} `
+    + `${pad(at.getHours())}:${pad(at.getMinutes())}:${pad(at.getSeconds())}`
 }
 
 /**
