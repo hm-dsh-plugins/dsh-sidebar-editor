@@ -11,7 +11,7 @@
  */
 
 import { existsSync } from 'node:fs'
-import { chmod, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -185,24 +185,43 @@ ok((await readFile(absolute, 'utf8')) === 'hello 世界\n', 'the refused write l
 result = await call('write', { sessionId: 'session-1', path: relative, text: 'second\n', expectedVersion: '1', force: true })
 ok(result.status === 200, 'force overwrites', result)
 
-result = await call('read', { sessionId: 'session-1', path: join(workspace, '..', 'escape.txt') })
-ok(result.status === 403 && result.body.code === 'outside-workspace', 'a traversal path is refused', result)
-
-result = await call('read', { sessionId: 'session-1', path: 'C:\\Windows\\win.ini' })
-ok(result.status === 403 && result.body.code === 'outside-workspace', 'a foreign absolute path is refused', result)
-
-// A directory link is a way out of the workspace even when the file below it
-// does not exist yet, so containment has to be checked through the nearest
-// existing ancestor rather than only on paths that already resolve.
+// Nothing on the machine is fenced off: an absolute path outside the workspace
+// is an ordinary file, and a traversal that climbs out lands on one too. Only
+// directories are refused, because this edits files.
 const outside = await mkdtemp(join(tmpdir(), 'dsh-sidebar-editor-outside-'))
 try {
+  await writeFile(join(outside, 'far.txt'), 'far away\n')
+  result = await call('read', { sessionId: 'session-1', path: join(outside, 'far.txt') })
+  ok(result.status === 200 && result.body.text === 'far away\n', 'an absolute path outside the workspace reads', result.body?.text)
+  ok(result.body.absolutePath === join(await realpath(outside), 'far.txt'), 'the answer names where the file really is', result.body.absolutePath)
+
+  result = await call('write', { sessionId: 'session-1', path: join(outside, 'written.txt'), text: 'from the editor\n' })
+  ok(
+    result.status === 200 && (await readFile(join(outside, 'written.txt'), 'utf8')) === 'from the editor\n',
+    'a write outside the workspace lands where it was named',
+    result,
+  )
+
+  // A directory link is followed, not treated as a way around anything: the
+  // file below it is created where the link points.
   await symlink(outside, join(workspace, 'escape-link'), 'junction')
   result = await call('write', { sessionId: 'session-1', path: 'escape-link/escaped.txt', text: 'escaped\n' })
-  ok(result.status === 403 && result.body.code === 'outside-workspace', 'a write through a directory link is refused', result)
-  ok(!existsSync(join(outside, 'escaped.txt')), 'nothing was created outside the workspace')
+  ok(result.status === 200 && existsSync(join(outside, 'escaped.txt')), 'a path through a directory link resolves to its target', result)
   result = await call('read', { sessionId: 'session-1', path: 'escape-link/escaped.txt' })
-  ok(result.status === 403, 'the same link is refused for a read', result)
+  ok(result.status === 200 && result.body.text === 'escaped\n', 'the same link reads back', result)
+
+  // `..` is just path arithmetic; what it lands on is an ordinary file — here
+  // the directory above this run's temporary workspace.
+  const aboveWorkspace = dirname(dirname(workspace))
+  await mkdir(aboveWorkspace, { recursive: true })
+  const climbedTo = join(aboveWorkspace, 'dsh-sidebar-editor-climb.txt')
+  await writeFile(climbedTo, 'climbed\n')
+  const climb = join('..', '..', 'dsh-sidebar-editor-climb.txt')
+  result = await call('read', { sessionId: 'session-1', path: climb })
+  ok(result.status === 200 && result.body.text === 'climbed\n', 'a traversal that climbs out of the workspace reads', result.body?.text)
+  await rm(climbedTo, { force: true })
 } finally {
+  await rm(join(workspace, 'escape-link'), { recursive: true, force: true })
   await rm(outside, { recursive: true, force: true })
 }
 
@@ -239,7 +258,7 @@ result = await call('read', { sessionId: 'session-1', path: 'subdir' })
 ok(result.status === 404, 'a directory is refused', result)
 
 result = await call('read', { sessionId: 'session-1', path: '.' })
-ok(result.status === 404 && result.body.code === 'not-found', 'the workspace directory itself is not a file', result)
+ok(result.status === 400 && result.body.code === 'bad-request', 'the workspace directory itself is not a file', result)
 
 result = await call('read', { path: relative })
 ok(result.status === 400, 'a missing sessionId is a bad request', result)
