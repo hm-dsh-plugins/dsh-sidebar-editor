@@ -24,8 +24,8 @@ DSH 自带的文件预览是**只读**的，这是它的设计：`@deepseek-ai/d
 > SPA 的 404。这一点在真实实例上实测过：路径拆成子路径时返回 `not found`，改成单一路径后
 > 请求正确进入插件处理器。
 
-**只读预览被保留。** 该插件不替换任何内置渲染器，只是在同一个「渲染器」下拉里多给一个选项，
-并且因为注册在 `extension` 档位而默认排在前面。图片、PDF、Office、表格继续用它们自己的只读预览。
+**只读预览被保留，默认渲染器也不变。** 该插件不替换任何内置渲染器，只是在同一个「渲染器」下拉里多给一个选项：
+它注册在 `builtin` 档位，文件照常按预览自己的默认方式打开，编辑器要自己从下拉里选。图片、PDF、Office、表格继续用它们自己的只读预览。
 
 ### 编辑体验
 
@@ -136,8 +136,7 @@ New-Item -ItemType Junction -Path "$profile\node_modules\dsh-sidebar-editor" `
 ## 怎么用
 
 1. 在右侧「文件」标签里展开目录，点开一个文本文件。
-2. 它直接就以编辑器打开——本插件在 `extension` 档位注册，排在 `builtin` 档位的只读预览前面。
-   想换回只读预览，用预览头部的**渲染器下拉**选「纯文本」或「代码」即可。
+2. 它按预览的默认方式打开（纯文本/代码视图）。要编辑，用预览头部的**渲染器下拉**选「编辑器」。
 3. 直接改，`Ctrl+S` 保存。
 
 > 只读预览一个都没动，只是排在后面。图片、PDF、Office、表格不在本插件的后缀声明里，
@@ -152,7 +151,7 @@ New-Item -ItemType Junction -Path "$profile\node_modules\dsh-sidebar-editor" `
 - **Host、发布脚本与客户端包 98 项**（`verify.mjs`）：
   - Host：读、写、建目录、UTF-8 往返、**BOM 往返**、版本冲突拒绝与强制覆盖、**没带版本的覆盖被拒绝（`version-required`）**、**工作区之外的绝对路径照常读写**、**`..` 爬出工作区照常读到**、**目录链接被跟随到目标**、**只读文件拒绝**、二进制与非法 UTF-8 拒绝、BOM 剥离、目录与工作区根拒绝、参数校验、未知会话、未知动作、**临时文件不残留（成功路径与写入失败路径各一条）**、**未物化会话经 `sessionPersistence` 解析**、**转义后超出内容上限的合法请求体照常保存**、**源码里用到的每个 `ctx.<服务>` 都在 `inject` 里声明**（递归扫描 `src/index.js` 与 `src/host/`）、**每个 `src/host/*.js` 都出现在 `lib/host/` 里**。
   - 发布脚本：同日递增、跨日归 1、旧格式归 1、本地日期、manifest 与 lock 两处同步、**lock 读不到时不改 manifest**。
-  - 客户端包：构建产物带「Generated from src/」banner、`__ModuleLoader__` 注册格式、包名、`factory(require)`、React 走平台模块表、`apply`/`inject` 导出、渲染器元数据（id、extension 档位、`loading: 'renderer'`、`wrap`）、130+ 后缀声明、body 槽位与 key、两处注册都由 effect 拥有，以及**源码里用到的每个 `ctx.<服务>` 都在 `inject` 里声明**。
+  - 客户端包：构建产物带「Generated from src/」banner、`__ModuleLoader__` 注册格式、包名、`factory(require)`、React 走平台模块表、`apply`/`inject` 导出、渲染器元数据（id、`builtin` 档位、`loading: 'renderer'`、`wrap`）、130+ 后缀声明、body 槽位与 key、两处注册都由 effect 拥有，以及**源码里用到的每个 `ctx.<服务>` 都在 `inject` 里声明**。
 - **DOM 挂载 55 项**（jsdom）：真把组件挂起来——读请求发出且路径解码正确、CodeMirror 挂载、行号开启、文件正文进入文档、contenteditable、样式只注入一次、卸载时干净拆除；**工具栏不重复文件路径**；**行尾控件**默认取文件自己的行尾、切换后转为未保存、切到 LF 就写 LF、切回 CRLF 就写 CRLF、**只含 CR 的文件保住它的 `\r`**；**保存后状态栏给出固定格式的时间戳**；**文档真的变了才算未保存**（直接向视图派发变更，覆盖「变更监听在视图创建之后挂上」这条时序）；**焦点在工具栏按钮上时 `Ctrl+S` 同样保存**；**被拒绝的保存会说明原因**；**保存后跟随的自动刷新不会重设文档**；**读还没落地时按 `Ctrl+S` 一个字节都不写**；**保存飞行途中继续键入，状态保持「未保存」**；**外部刷新不覆盖未保存编辑，冲突条给出「重新载入」且真的重载**；**打开失败后重试，编辑器回到面板并载入正文**；**界面语言切换后文案跟着变**；**同一对话里重新打开文件回到上次停下的位置，切换对话后从头开始**（对话用侧边栏真实的两层 `data-sidebar-right-session` 结构造出来）。
 
 > `inject` 检查是补的：cordis 只对**声明过**该服务的 fiber 解析 `ctx.<服务>`，
@@ -182,7 +181,7 @@ New-Item -ItemType Junction -Path "$profile\node_modules\dsh-sidebar-editor" `
 
 - `POST /api/plugins/dsh-sidebar-editor` 用真实 `sessionId` 建出 `…\dsh_playground\.dsh-editor-selftest.txt`，
   返回 `{"absolutePath":…,"version":…,"bytes":18}`，磁盘上的内容一致。
-- 浏览器里打开 `dsh-sidebar-editor/README.md`：自动以编辑器打开，59 行正文进入 CodeMirror，行号、语言标签 `md`、
+- 浏览器里打开 `dsh-sidebar-editor/README.md` 并从渲染器下拉里选「编辑器」：59 行正文进入 CodeMirror，行号、语言标签 `md`、
   状态栏「已保存」都在；键入内容后状态变「未保存」、保存按钮解禁，`Ctrl+S` 后回到「已保存」，磁盘内容同步更新。
 - 启动日志与浏览器控制台都没有报错，`web boot` 不再有任何条目失败。
 

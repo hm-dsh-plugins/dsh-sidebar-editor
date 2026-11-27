@@ -482,7 +482,10 @@ bundle.apply(clientCtx)
 eq(registrations.previews.length, 1, 'registers exactly one renderer definition')
 const definition = registrations.previews[0]
 ok(definition.id === 'dsh-sidebar-editor', 'renderer id is the package name', definition.id)
-ok(definition.priority === undefined, 'no priority means the extension band, so it outranks builtin viewers')
+// The preview opens a file with its own viewer and lists plugin renderers in
+// the menu; claiming the `extension` band (the default when `priority` is
+// absent) would make this editor the renderer every text file opens with.
+ok(definition.priority === 'builtin', 'stays in the builtin band, so a file still opens with the default viewer', definition.priority)
 ok(definition.loading === 'renderer', 'the body loads its own content')
 ok(definition.wrap === true, 'the body consumes the wrap preference')
 ok(typeof definition.title === 'function' && definition.title().length > 0, 'the renderer has a title', definition.title?.())

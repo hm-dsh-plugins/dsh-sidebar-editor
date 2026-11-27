@@ -3,9 +3,10 @@
  *
  * It contributes one more renderer to the right Sidebar's document preview:
  * an editable CodeMirror view offered next to the shipped read-only viewers.
- * The preview's own renderers are untouched, and the user chooses the editor
- * from the renderer menu they already use — so a picture, a PDF, or a
- * spreadsheet still opens as itself.
+ * The preview's own renderers are untouched, and a file opens the way the
+ * preview opens it by default — a picture, a PDF, or a spreadsheet still opens
+ * as itself, and a text file opens in whichever viewer the preview chooses. The
+ * editor is one more entry in the renderer menu the user already uses.
  *
  * The declared suffixes are the editor's own language table plus the extra
  * plain-text shapes worth editing. A file whose suffix no renderer claims still
@@ -71,9 +72,12 @@ export function apply(ctx) {
       ctx.documentPreviews.register({
         id: ID,
         extensions: EXTENSIONS,
-        // No `priority` means the `extension` band, so this counts as a plugin
-        // renderer: for a text file it becomes the renderer shown first, and the
-        // shipped read-only viewers stay selectable beside it.
+        // `builtin` is not a rank to win here but the band two plugin renderers
+        // end up in: the preview sorts external renderers ahead of product ones,
+        // so claiming the `extension` band would make the editor the renderer a
+        // file opens with. In the `builtin` band it keeps its place behind the
+        // shipped viewers and is picked from the renderer menu.
+        priority: 'builtin',
         title: () => strings().title,
         loading: 'renderer',
         wrap: true,
